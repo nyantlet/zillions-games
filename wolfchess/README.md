@@ -8,4 +8,4 @@ Currently, it is a proof-of-concept level.
 
 ## License
 
-[CC0-1.0](LICENSE), including image files.
+[CC0-1.0](LICENSE.txt), including image files.

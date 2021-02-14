@@ -1,0 +1,230 @@
+; Wolfchess v0.1.0
+; Written in 2021 by nyantlet. See LICENSE.txt for details.
+; SPDX-License-Identifier: CC0-1.0
+
+; Known problem
+; - It is not an wolfchess. :)
+
+(version "2.0")
+
+; setboard-move checks current drops are in setboard-zone
+(define setboard-move (setboard-zone (verify empty?) add))
+
+; nocheck-wolf-move makes a move, just like normal chess.
+; check-wolf-move checks enemy werewolf in destination, and refuse to move.
+(define nocheck-wolf-move ($1 (verify not-friend?) add))
+(define check-wolf-move (
+	$1 (verify not-friend?) (verify (not-piece? Werewolf)) add
+))
+
+; Note that werewolves can not capture.
+(define werewolf-move ($1 (verify empty?) add))
+
+; to-wolf-move checks enemy werewolf, make it werewolfb, then remove itself.
+(define to-wolf-move (
+	(verify (not-friend? $1)) (verify (piece? Werewolf $1))
+	capture
+	$1
+	(create Werewolfb) flip flip
+	add
+))
+
+(game
+	(title "Wolfchess")
+	(description "Object: Kill the opponent's King.")
+	(history "Wolfchess is invented in 2020 by Japanese Youtuber QuizKnock.")
+	(strategy "Beware werewolf.")
+	(win-sound "Audio\Orchestra_CF.wav")
+	(loss-sound "Audio\Orchestra_FC.wav")
+	(click-sound "Audio\Pickup.wav")
+	(release-sound "Audio\WoodThunk.wav")
+	(players Player1 ?NotUsing Player2 ?Ref)
+
+	; We do not want to reveal information.
+	(option "animate drops" false)
+	(option "animate captures" true)
+	(option "include off-pieces" true)
+	(option "prevent flipping" true)
+
+	; First, we drop 6 pieces.
+	; Then, COM drops 3 pieces randomly, 3 pieces intentionally.
+	(turn-order
+		(Player1 setboard) (Player1 setboard) (Player1 setboard)
+		(Player1 setboard) (Player1 setboard) (?Ref Player1 setboard)
+		(?Ref Player2 setboard) (Player2 setboard) (?Ref Player2 setboard)
+		(Player2 setboard) (?Ref Player2 setboard) (?Ref Player2 setboard)
+		repeat (Player1 normal) (Player2 normal)
+	)
+
+	; Define board
+	(board
+		(image "images\wolfchess\board1.bmp")
+		(grid
+			(start-rectangle 40 40 108 108)
+			(dimensions
+				("a/b/c" (78 0))
+				("5/4/3/2/1" (0 78))
+			)
+			(directions
+				(n 0 -1) (e 1 0) (s 0 1) (w -1 0)
+				(ne 1 -1) (nw -1 -1) (se 1 1) (sw -1 1)
+			)
+		)
+		(symmetry Player2 (n s) (s n) (ne se) (nw sw) (se ne) (sw nw))
+		(zone
+			(name setboard-zone)
+			(players Player1)
+			(positions a1 a2 b1 b2 c1 c2)
+		)
+		(zone
+			(name setboard-zone)
+			(players Player2)
+			(positions a4 a5 b4 b5 c4 c5)
+		)
+	)
+	(board-setup
+		(Player1
+			(King off 1)
+			(Knight off 1)
+			(Hunter off 1)
+			(Werewolf off 1)
+			(Teller off 1)
+			(Villian off 1)
+		)
+		(Player2
+			(King off 1)
+			(Knight off 1)
+			(Hunter off 1)
+			(Werewolf off 1)
+			(Teller off 1)
+			(Villian off 1)
+		)
+	)
+
+	; Define pieces
+	(piece
+		(name Villian)
+		(help "Villian: moves forward")
+		(description "Villian\A Villian can move straight ahead one square.")
+		(image
+			Player1 "images\wolfchess\villian1.bmp"
+			Player2 "images\wolfchess\b_villian1.bmp"
+		)
+		(moves (move-type normal) (check-wolf-move n) (to-wolf-move n))
+		(drops (move-type setboard) (setboard-move))
+	)
+	(piece
+		(name Teller)
+		(help "Teller: moves forward, kills Werewolf")
+		(description
+			"Teller\A Teller can move straight ahead one square.
+			It also can kill Werewolf."
+		)
+		(image
+			Player1 "images\wolfchess\teller1.bmp"
+			Player2 "images\wolfchess\b_teller1.bmp"
+		)
+		(moves (move-type normal) (nocheck-wolf-move n))
+		(drops (move-type setboard) (setboard-move))
+	)
+	(piece
+		(name Knight)
+		(help "Knight: moves one row or column")
+		(description "Teller\A Knight can move one row or column.")
+		(image
+			Player1 "images\wolfchess\knight1.bmp"
+			Player2 "images\wolfchess\b_knight1.bmp"
+		)
+		(moves (move-type normal)
+			(check-wolf-move n) (to-wolf-move n)
+			(check-wolf-move e) (to-wolf-move e)
+			(check-wolf-move s) (to-wolf-move s)
+			(check-wolf-move w) (to-wolf-move w)
+		)
+		(drops (move-type setboard) (setboard-move))
+	)
+	(piece
+		(name Hunter)
+		(help "Hunter: moves one square diagonally")
+		(description "Hunter\A Hunter can move one sqaure diagonally.")
+		(image
+			Player1 "images\wolfchess\hunter1.bmp"
+			Player2 "images\wolfchess\b_hunter1.bmp"
+		)
+		(moves (move-type normal)
+			(check-wolf-move ne) (to-wolf-move ne)
+			(check-wolf-move nw) (to-wolf-move nw)
+			(check-wolf-move se) (to-wolf-move se)
+			(check-wolf-move sw) (to-wolf-move sw)
+		)
+		(drops (move-type setboard) (setboard-move))
+	)
+	(piece
+		(name King)
+		(help "King: moves one square in any direction")
+		(description "King\A King can move one sqaure in any direction.")
+		(image
+			Player1 "images\wolfchess\king1.bmp"
+			Player2 "images\wolfchess\b_king1.bmp"
+		)
+		(moves (move-type normal)
+			(check-wolf-move n) (to-wolf-move n)
+			(check-wolf-move e) (to-wolf-move e)
+			(check-wolf-move s) (to-wolf-move s)
+			(check-wolf-move w) (to-wolf-move w)
+			(check-wolf-move ne) (to-wolf-move ne)
+			(check-wolf-move nw) (to-wolf-move nw)
+			(check-wolf-move se) (to-wolf-move se)
+			(check-wolf-move sw) (to-wolf-move sw)
+		)
+		(drops (move-type setboard) (setboard-move))
+	)
+	(piece
+		(name Werewolf)
+		(help
+			"Werewolf: moves one square in any direction except diagonally backwards.
+			Cannot capture opponent pieces."
+		)
+		(description
+			"Werewolf\A Werewolf can move one square in any direction
+			except diagonally backwards. Cannot capture opponent pieces."
+		)
+		(image
+			Player1 "images\wolfchess\werewolf1.bmp"
+			Player2 "images\wolfchess\b_werewolf1.bmp"
+		)
+		(moves (move-type normal)
+			(werewolf-move n)
+			(werewolf-move e)
+			(werewolf-move s)
+			(werewolf-move w)
+			(werewolf-move nw)
+			(werewolf-move ne)
+		)
+		(drops (move-type setboard) (setboard-move))
+	)
+	(piece
+		(name Werewolfb)
+		(help "Werewolf: moves one square in any direction except diagonally backwards.")
+		(description
+			"Werewolf\A Werewolf can move one square in any direction
+			except diagonally backwards."
+		)
+		(image
+			Player1 "images\wolfchess\werewolfb1.bmp"
+			Player2 "images\wolfchess\b_werewolfb1.bmp"
+		)
+		(moves (move-type normal)
+			(check-wolf-move n) (to-wolf-move n)
+			(check-wolf-move e) (to-wolf-move e)
+			(check-wolf-move s) (to-wolf-move s)
+			(check-wolf-move w) (to-wolf-move w)
+			(check-wolf-move nw) (to-wolf-move nw)
+			(check-wolf-move ne) (to-wolf-move ne)
+		)
+	)
+
+	; Win-lose condition
+	(loss-condition (Player1 Player2) (pieces-remaining 0 King))
+	(loss-condition (Player1 Player2) stalemated)
+)
